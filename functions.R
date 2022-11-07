@@ -71,13 +71,15 @@ CV_sampling <- function(cbcl, brain, s_num, partition) {
 }
 
 
-# Penalty parameters selection:part of the code is based on Xia et al.(2018)
 
+# Penalty parameters selection:part of the code is based on Xia et al.(2018) & Dinga et al.
 cca_resample_test_m <- function(X, Y, X2, Y2, pen_x, pen_y,nsample) { 
   # X and Y are training sets created by CV_sampling, 
   # X2 and Y2 are test sets created by CV_sampling
   # pen_x is for brain
   # pen_y is for cbcl
+  # nsample is how many resamples you have 
+  
   cl <- makePSOCKcluster(8)
   registerDoParallel(cl)
   cca.out <- foreach::foreach(i=1:nsample, .packages=c("PMA","doParallel","permute")) %dopar% {
@@ -85,6 +87,7 @@ cca_resample_test_m <- function(X, Y, X2, Y2, pen_x, pen_y,nsample) {
       cca.out <- PMA::CCA(x=X, z=Y, typex="standard", typez="standard", penaltyx = pen_x, penaltyz = pen_y, 
                           niter = 20, K=cv_num)
     }
+    # calculate the correlations in the test sets
     res <- cca.res(X[[i]], Y[[i]], pen_x, pen_y, 8)
     std_brain <- scale(X2[[i]]) %*% res$u
     std_cbcl <- scale(Y2[[i]]) %*% res$v
@@ -101,6 +104,12 @@ cca_resample_test_m <- function(X, Y, X2, Y2, pen_x, pen_y,nsample) {
 
 ######## grid search
 grid.search.cor.Testset <- function(X,Y,X2,Y2,pen_xseq,pen_yseq,nsample) {
+  # X and Y are training sets created by CV_sampling, 
+  # X2 and Y2 are test sets created by CV_sampling
+  # pen_xseq is for brain
+  # pen_yseq is for cbcl
+  # nsample is how many resamples you have
+  
   # loop through x penalty
   pen_x_loop <- function(X,Y,X2,Y2,pen_xseq,pen_y,nsample){
     pen_x_loop <- lapply(pen_xseq, function(x) cca_resample_test_m(X,Y,X2,Y2,x,pen_y,nsample))
@@ -123,6 +132,7 @@ grid.search.cor.Testset <- function(X,Y,X2,Y2,pen_xseq,pen_yseq,nsample) {
 ####### covariance explained ######
 ###################################
 
+# Code is based on Xia et al.(2018)
 VarianceExplain <- function(brain,cbcl,ccares, n) {
   residual_std <- apply(brain, 2, scale)
   cbcl_std <- apply(cbcl, 2, scale)
@@ -136,14 +146,14 @@ VarianceExplain <- function(brain,cbcl,ccares, n) {
   return(varE.df)
 }
 
-
-
+                     
+                      
 ####################################
 ###### Generalizability test  ######
 ####################################
 
 
-# project the weights cna calculate canonical correlations
+# project the weights and calculate canonical correlations
 test_project_weights <- function(brain,cbcl,training_model, nCor){
   std_brain <- scale(brain) %*% training_model$u
   std_cbcl <- scale(cbcl) %*% training_model$v
@@ -155,7 +165,7 @@ test_project_weights <- function(brain,cbcl,training_model, nCor){
 # permutation tests in ABCD training sets
 permutation_test <- function(cbcl,brain,nperm, penaltyCBCL,penaltyBrain,numCor, cors) { 
   # numCor is the number of correlations you are interested in
-  # ccamodel is the model you want to test using the permutation test
+  # cors are the correlations in the unshuffled data
   n.perm = nperm
   shuffle_idx <- sapply(1:n.perm, function (x){permute::shuffle(1:nrow(cbcl))})
   cbcl_perm <- lapply(1:n.perm, function(i) {cbcl[shuffle_idx[, i], ]})
@@ -180,8 +190,6 @@ permutation_test <- function(cbcl,brain,nperm, penaltyCBCL,penaltyBrain,numCor, 
 
 # permutation tests in ABCD test sets
 permutation_test_testset <- function(cbcl,brain,nperm, model,cors) { 
-  # numCor is the number of correlations you are interested in
-  # ccamodel is the model you want to test using the permutation test
   n.perm = nperm
   shuffle_idx <- sapply(1:n.perm, function (x){permute::shuffle(1:nrow(cbcl))})
   cbcl_perm <- lapply(1:n.perm, function(i) {cbcl[shuffle_idx[, i], ]})
