@@ -28,11 +28,6 @@ colnames(feature_abcd) <- paste0("F_", 1:ncol(feature_abcd))
 feature_abcd$participant_id <- subid
 saveRDS(feature_abcd, "feature_abcd_finalReleaseQC_6816.rds")
 
-feature_abcd_noNA <- feature_abcd[rowSums(is.na(feature_abcd[, -ncol(feature_abcd)])) == 0, ]
-id_brain_NA <- feature_abcd$participant_id[rowSums(is.na(feature_abcd[, -ncol(feature_abcd)])) != 0]
-
-saveRDS(feature_abcd_noNA, "feature_abcd_finalReleaseQC_noNA.rds")
-saveRDS(id_brain_NA, "id_brain_NA.rds")
 
 
 
