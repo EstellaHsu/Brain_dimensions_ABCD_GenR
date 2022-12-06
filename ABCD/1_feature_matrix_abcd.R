@@ -1,7 +1,10 @@
+################################################
+####### make connectivity features #############
+################################################
+
 setwd("/gpfs/work2/0/einf1049/scratch/bxu/ABCD_replication_codes/finalReleaseQC_0817/")
 library(doParallel)
 library(permute)
-
 
 behavior <- readRDS("all_demo_qc_gene_cbclsyndromeRawscore_newQC.rds")
 subid <- behavior$participant_id
