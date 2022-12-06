@@ -29,7 +29,7 @@ weighted_pca <- function(cbcl,brain,n) {
 ####### penalty parameters search ######
 ########################################
 
-# create 100 resamples of the ABCD training set (100 training and validation sets)
+####### create 100 resamples of the ABCD training set (100 training and validation sets)
 CV_sampling <- function(cbcl, brain, s_num, partition) {
   
   # s_num: number of resamples
@@ -72,7 +72,8 @@ CV_sampling <- function(cbcl, brain, s_num, partition) {
 
 
 
-# Penalty parameters selection:part of the code is based on Xia et al.(2018) & Dinga et al.
+######## Penalty parameters selection:part of the code is based on Xia et al.(2018) & Dinga et al.
+
 cca_resample_test_m <- function(X, Y, X2, Y2, pen_x, pen_y,nsample) { 
   # X and Y are training sets created by CV_sampling, 
   # X2 and Y2 are test sets created by CV_sampling
@@ -103,6 +104,7 @@ cca_resample_test_m <- function(X, Y, X2, Y2, pen_x, pen_y,nsample) {
 
 
 ######## grid search
+                    
 grid.search.cor.Testset <- function(X,Y,X2,Y2,pen_xseq,pen_yseq,nsample) {
   # X and Y are training sets created by CV_sampling, 
   # X2 and Y2 are test sets created by CV_sampling
