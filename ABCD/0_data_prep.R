@@ -151,7 +151,7 @@ saveRDS(all_final_noNA,"all_final_noNA_incidental_6529.rds")
 #########################################
 # first split the site 10 times
 sites <- unique(all_final_noNA$site)
-# there are 22 sites, so 22*0.8=17.6 for the training sites
+# there are 18 sites for the training sites
 train_sites <- lapply(1:10, function(i) sample(sites, size = 18, replace = FALSE))
 
 # then split of the ids
