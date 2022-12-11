@@ -14,243 +14,22 @@ packages <- c('psych','doParallel','permute','reshape2','PMA','caret','corrplot'
 
 lapply(packages, require, character.only = TRUE)
 
-########################################################
-############## 1. Read the data ########################
-########################################################
-setwd("~/Desktop/ABCD_download/data/newdata_ReleaseQC/retraintest")
-### read the data
-rs_resample <- lapply(c(1:3,5:11), function(i) { path <- paste0("train_test_split_", i, ".rds")
-                           rs_sample <- readRDS(path)})
 
-rm(rs_resample)
+#############################################################################
+###### bootstrap of one split: stability check of cbcl and the brain loaidngs
+#############################################################################
 
-rs_train <- lapply(1:10, function(i) {temp <- rs_resample[[i]]
-                        list(brain_train=temp$pca_train$brain_train_reduced,
-                        cbcl_train=temp$cbcl_train)})
-saveRDS(rs_train, "rs_train.rds")
-rs_test <- lapply(1:10, function(i) {temp <- rs_resample[[i]]
-                        brain_test <- as.matrix(temp$brain_test) %*% temp$pca_train$rotation[, 1:100]
-                        list(brain_test=brain_test,
-                             cbcl_test=temp$cbcl_test)})
-saveRDS(rs_test,"rs_test.rds")
-rs_rotation <- lapply(1:10, function(i) {temp <- rs_resample[[i]]
-                        brain_rotation <- temp$pca_train$rotation[, 1:100]})
-saveRDS(rs_rotation,"rs_rotation.rds")
-
-rm(rs_resample)
-
-p1 <- readRDS("train_test_split_1.rds")
-f1 <- p1$pca_train$brain_train_reduced
-f1_cbcl <- p1$cbcl_train
-
-
-lapply(rs_test, function(x) {nrow(x$cbcl_test)})
-################################################
-############## 2. grid search ##################
-################################################
-####### Step 1: train penalty parameters 
-##### weighted PCA
-grid.abcd.wholesample <- lapply(1:10, function(i) {
-  rsfmri_resample <- rs_train[[i]]
-  brain_train <- rsfmri_resample$brain_train
-  cbcl_train <- rsfmri_resample$cbcl_train
-  cv.resample <- CV_sampling(cbcl_train, brain_train, 100, 0.8)
-  
-  x_pen <- seq(0.1, 1.0, length.out = 10) # brain
-  y_pen <- seq(0.1, 1.0, length.out = 10)
-  
-  grid.abcd <- grid.search.cor.Testset(cv.resample$brain_train, cv.resample$cbcl_train,
-                                       cv.resample$brain_test, cv.resample$cbcl_test,
-                                       x_pen,y_pen,nsample=100)
-})
-
-saveRDS(grid.abcd.wholesample,"grid.abcd.wholesample.rds")
-
-# 0.5, 0.8
-# 0.5, 0.5
-# 0.5, 0.3/0.2
-# 0.5, 0.5
-# 0.5, 0.6
-# 0.5, 0.3
-# 0.5, 0.5
-# 0.5, 0.5
-# 0.7/0.5, 0.2
-# 0,5, 0.3
-
-########################################################
-############## 3. Fit the sCCA model  ##################
-########################################################
-res.abcd.5 <- CCA(x=rs_train[[5]]$brain_train, z=rs_train[[5]]$cbcl_train, penaltyx = 0.6, penaltyz = 0.5, typex="standard", typez="standard",
-                          niter = 20, K=8)
-res.abcd.5
-
-# visualize the loadings:
-cbcl_loading <- res.abcd.1$v
-
-#cbcl_loading[, 3:5] <- -cbcl_loading[, 3:5] 
-rownames(cbcl_loading)  <- c("anxious","withdrawn","somatic","social","thought","attention","rule_breaking","aggression")
-corrplot(t(cbcl_loading)[1:3,], method="color", 
-         addCoef.col = "black", tl.srt =45, tl.col = "black", tl.cex = 1.6, number.cex=1)
-
-### permutation test
-perm_abcd1 <- permutation_test(f1_cbcl, f1, nperm=999, 0.2, 0.5, 8, res.abcd.siemens.1$cors)
-
-df.cor.2 <- data.frame(cor = perm_abcdtest10$cor.perm[, 2])
-df.cor.1 <- data.frame(cor = perm_abcdtest10$cor.perm[, 1])
-df.cor.3 <- data.frame(cor = perm_abcdtest10$cor.perm[, 3])
-
-pdf("permutation_test_cv3.pdf", width=5, height=3)
-ggplot(df.cor.3, aes(x=cor)) +  # Apply nrow function
-  geom_histogram(binwidth=0.01, fill = "#afe0a9", color = "black", alpha = 0.6)+
-  geom_vline(xintercept=0.13, linetype="dashed", color = "red", size = 1) +
-  ggtitle("Permutation correlations of the 1st canonical variate") + 
-  labs(x = "canonical correlations") + 
-  #annotate(geom="text", x=0.0, y=200, label="r = 0.13", size = , color="black") + 
-  xlim(c(-0.2, 0.2)) + annotate(geom="text", x=0.0, y=180, label="P(FDR) < 0.01", 
-                                fontface = 'italic', size = 5, color="black") + 
-  theme_bw()
-dev.off()
-
-cor2 <- ggplot(df.cor.2, aes(x=cor)) +  # Apply nrow function
-  geom_histogram(binwidth=0.01, fill = "lightblue", color = "black", alpha = 0.8)+
-  geom_vline(xintercept=0.07, linetype="dashed", color = "red", size = 1) + 
-  annotate(geom="text", x=0.13, y=250, label="r = 0.16", size = 5, color="black") + xlim(c(-0.2, 0.2))+
-  annotate(geom="text", x=0.13, y=225, label="p(fdr) < 0.001", fontface = 'italic', size = 5, color="black") +
-  ggtitle("Permutation correlations of the 2nd canonical variate") + 
-  labs(x = "canonical correlations") + 
-  theme_bw()
-cor3 <- ggplot(df.cor.3, aes(x=cor)) +  # Apply nrow function
-  geom_histogram(binwidth=0.01, fill = "limegreen", color = "black", alpha = 0.6)+
-  geom_vline(xintercept=0.09, linetype="dashed", color = "red", size = 1) + 
-  annotate(geom="text", x=0.13, y=250, label="r = 0.17", size = 5, color="black") + xlim(c(-0.2, 0.2))+
-  annotate(geom="text", x=0.13, y=225, label="p(fdr) < 0.001", fontface = 'italic', size = 5, color="black") +
-  ggtitle("Permutation correlations of the 3rd canonical variate") + 
-  labs(x = "canonical correlations") + 
-  theme_bw()
-
-grid.arrange(cor1, cor2, cor3, ncol =3)  
-
-########################################################
-############## Covariance explained  ###################
-########################################################
-vardf <- VarianceExplain(f7_syn, f7_syn_cbcl, res.wei.syn.abcd7, 8) 
-colnames(vardf) <- c("principal_components", "Covariance_explained")
-ggplot(vardf, aes(x=principal_components, y=Covariance_explained))+
-  geom_point(size = 3) + theme_bw()
-
-############################################################
-############## Replication within ABCD  ####################
-############################################################
-test_abcd <- as.matrix(p1$brain_test) %*% p1$pca_train$rotation[, 1:100]
-dim(test_abcd)
-# direct mapping
-cor.abcdtest <- test_project_weights(test_abcd, p1$cbcl_test,res.abcd.1, 8)
-cor.abcdtest
-perm_abcdtest <- permutation_test_testset(p1$cbcl_test, test_abcd,nperm=999, 
-                                                  res.abcd.1,cor.abcdtest)
-p.adjust(perm_abcdtest1$pval.perm, "fdr")
-
-
-###############################################################
-############## Replication in Generation R  ####################
-###############################################################
-setwd("/Users/estella/Desktop/ABCD_download/data/Generation_R")
-feature_brain_centered <- readRDS("feature_brain_centered_genr.rds")
-test.pca.genr <- as.matrix(feature_brain_centered) %*% as.matrix(p1$pca_train$rotation[, 1:100])
-
-# direct mapping
-cor.abcdTogenr <- test_project_weights(test.pca.genr, cbcl_syn_genr, res.abcd.1, 6)
-cor.abcdTogenr
-
-########################################
-############ automatic process
-########################################
-# 0.5, 0.8 1
-# 0.5, 0.5 2
-# 0.5, 0.3/0.2 3
-# 0.5, 0.5 4
-# 0.5, 0.6 5
-# 0.5, 0.3 6
-# 0.5, 0.5 7
-# 0.5, 0.5 8
-# 0.7/0.5, 0.2 9
-# 0,5, 0.3 10
-cbcl_pen <- c(0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.7,0.5)
-brain_pen <- c(0.8,0.5,0.3,0.5,0.6,0.3,0.5,0.5,0.2,0.3)
-
-setwd("~/Desktop/ABCD_download/data/newdata_ReleaseQC/retraintest")
-rs_train <- readRDS("rs_train.rds")
-rs_test <- readRDS("rs_test.rds")
-rs_rotation <- readRDS("rs_rotation.rds")
-
-rs_train_test_abcd <- lapply(1:10, function(i) {
-  
-  brain_train <- rs_train[[i]]$brain_train
-  cbcl_train <- rs_train[[i]]$cbcl_train
-  brain_test <- rs_test[[i]]$brain_test
-  cbcl_test <- rs_test[[i]]$cbcl_test
-  brain_pen <- brain_pen[i]
-  cbcl_pen <- cbcl_pen[i]
-  
-  res.abcd <- CCA(x=brain_train, z=cbcl_train, penaltyx = brain_pen, penaltyz = cbcl_pen, 
-                  typex="standard", typez="standard",niter = 20, K=8)
-  perm_abcd_train <- permutation_test(cbcl_train, brain_train, nperm=999, cbcl_pen, brain_pen, 8, res.abcd$cors)
-  
-  abcd.test <- test_project_weights(brain_test,cbcl_test,res.abcd, 8)
-  perm_abcd_test <- permutation_test_testset(cbcl_test,brain_test,nperm=999,res.abcd,abcd.test)
-  
-  cor.abcdTogenr <- test_project_weights(brain_genr_str, cbcl_genr_str, res.abcd, 8)
-  perm_abcdTogenr_total <- permutation_test_testset(cbcl_genr_str,brain_genr_str,nperm=999, 
-                                                    res.abcd,abs(cor.abcdTogenr))
-  
-  return(list(abcd.train=res.abcd,abcd.train.perm=perm_abcd_train$pval.perm,
-              abcd.test=abcd.test,abcd.test.perm=perm_abcd_test$pval.perm,
-              res.genr=cor.abcdTogenr,genr.perm=perm_abcdTogenr_total$pval.perm))
-})
-
-
-cbcl_loading <- abs(rs_train_test_abcd[[7]]$abcd.train$v)
-rownames(cbcl_loading)  <- c("anxious","withdrawn","somatic","social","thought","attention","rule_breaking","aggression")
-
-corrplot(t(cbcl_loading)[1:5,], method="color", 
-         addCoef.col = "black", tl.srt =45, tl.col = "black", tl.cex = 2, number.cex=1)
-
-vardf <- VarianceExplain(rs_train[[5]]$brain_train, rs_train[[5]]$cbcl_train, res.abcd.5, 8) 
-colnames(vardf) <- c("principal_components", "Covariance_explained")
-ggplot(vardf, aes(x=principal_components, y=Covariance_explained))+
-  geom_point(size = 3) + theme_bw()
-
-saveRDS(rs_train_test_abcd,"rs_train_test_abcd.rds")
-
-
-
-##############################################################################
-############ use split 7 to further explore the canonical loadings ###########
-##############################################################################
-
-rsbrain_loading <- abs(rs_train_test_abcd[[7]]$abcd.train$u)
-rsbrain_loading <- rsbrain_loading[, 1:3]
-rownames(rsbrain_loading) <- paste0("PC",1:nrow(rsbrain_loading))
-colnames(rsbrain_loading) <- rownames(c("CV1","CV2","CV3"))
-
-rs_brain_loadings <- rsbrain_loading[rowSums(rsbrain_loading) != 0, ]
-
-
-###########################################################################
-###### bootstrap of the best split: stability check of cbcl and the brain
-###########################################################################
-
-# split 7 as an example
-setwd("~/Desktop/ABCD_download/data/newdata_ReleaseQC/retraintest")
-### read the data
-rs_example <- readRDS("train_test_split_7.rds")
+######## read the data: for example split 7
+rs_example <- readRDS("train_test_split.rds")
+rs_example <- rs_example[[7]]
 brain_train <- rs_example$pca_train$brain_train_reduced
 cbcl_train <- rs_example$cbcl_train
 brain_test <- as.matrix(rs_example$brain_test) %*% rs_example$pca_train$rotation[, 1:100]
 cbcl_test <- rs_example$cbcl_test 
-res.abcd.7 <- CCA(x=brain_train, z=cbcl_train, penaltyx = 0.5, penaltyz = 0.5, typex="standard", typez="standard",
+# penalty parameters are based on grid search in the second SCCA step. 
+res.abcd.example <- CCA(x=brain_train, z=cbcl_train, penaltyx = 0.5, penaltyz = 0.5, typex="standard", typez="standard",
                   niter = 20, K=8)
-res.abcd.7
+res.abcd.example
 
 
 ######## bootstrap of the CVs and correlations
@@ -279,62 +58,62 @@ boot_abcd <- foreach(1:n_boot, .packages="PMA") %dopar% {
 stopCluster(cl)
 
 ###### reorder the CVs of cbcl and brain
-load_std <- res.abcd.7$u
+load_std <- res.abcd.example$v
 cv_reorder_boot_abcd  <- lapply(seq_along(boot_abcd), function(j) {
   # go through all the splits
   idx_v <- c()
-  for (i in 1:4) {
+  for (i in 1:5) { # we only care about the first 5 CVs, as the covariance explained is very small for other CVs
     # calculate the maximum correlation of each CV and reorder
-    cor_cv <- sapply(1:4, function(z) {cor(load_std[, i], boot_abcd[[j]]$brain_loading[, z])})
+    cor_cv <- sapply(1:5, function(z) {cor(load_std[, i], boot_abcd[[j]]$cbcl_loading[, z])})
     if(max(abs(cor_cv)) < 0.5){ # sometimes the correlation is too low
       idx  <- i
     } else {
       idx <- which(abs(cor_cv) == max(abs(cor_cv)))
     }
     
-    if(!idx %in% idx_v) {
-      idx_v <- c(idx_v, idx) # sometimes it will overlap
+    if(!idx %in% idx_v) {# sometimes it will overlap
+      idx_v <- c(idx_v, idx) 
     } else {
       idx_v <- c(idx_v, i) 
     }
   }
   
-  idx_v[duplicated(idx_v)] <- c(1:4)[!c(1:4) %in% idx_v]
-  list(idx_reorder=idx_v)
-  
+  idx_v[duplicated(idx_v)] <- c(1:5)[!c(1:5) %in% idx_v]
+  list(idx_reorder=idx_v)  
 })
 
 
-
-# training set
-boot_cor_train <- lapply(boot_abcd, function(x) {x$cors_train[1:4]})
+##### first three canonical correlations in training sets
+boot_cor_train <- lapply(boot_abcd, function(x) {x$cors_train[1:3]})
 boot_cor_train <- do.call(rbind,boot_cor_train)
 boot_cor_train_reorder <- lapply(1:n_boot, function(i) {boot_cor_train[i, cv_reorder_boot_abcd[[i]]$idx_reorder]})
 boot_cor_train_reorder <- do.call(rbind, boot_cor_train_reorder)
-colnames(boot_cor_train_reorder) <- paste0("CV",1:4)
+colnames(boot_cor_train_reorder) <- paste0("CV",1:3)
 meantrain_boot <- colMeans(boot_cor_train_reorder)
 sdtrain_boot <- apply(boot_cor_train_reorder,2,sd)
 
-# test set
-boot_cor_test <- lapply(boot_abcd, function(x) {x$cors_test[1:4]})
+##### first three canonical correlations in test sets
+boot_cor_test <- lapply(boot_abcd, function(x) {x$cors_test[1:3]})
 boot_cor_test <- do.call(rbind,boot_cor_test)
 boot_cor_test_reorder <- lapply(1:n_boot, function(i) {boot_cor_test[i, cv_reorder_boot_abcd[[i]]$idx_reorder]})
 boot_cor_test_reorder <- do.call(rbind,boot_cor_test_reorder)
-colnames(boot_cor_test_reorder) <- paste0("CV",1:4)
+colnames(boot_cor_test_reorder) <- paste0("CV",1:3)
 meantest_boot <- colMeans(boot_cor_test_reorder)
 sdtest_boot <- apply(boot_cor_test, 2, sd)
 
 
-fig_boot_syn <- data.frame(Train_Test = rep(c("Training set","Test set"),each=4), meancor = c(meantrain_boot, meantest_boot),
-                           sdcor = c(sdtrain_boot, sdtest_boot), CV=rep(paste0("CV",1:4),2))
+fig_boot_syn <- data.frame(Train_Test = rep(c("Training set","Test set"),each=3), 
+                           meancor = c(meantrain_boot, meantest_boot),
+                           sdcor = c(sdtrain_boot, sdtest_boot), CV=rep(paste0("CV",1:3),2))
 
+#################################################
 ########### violin plot with error bars
-#########################
-#train
+#################################################
+#train set
 df1 <- as.data.frame(boot_cor_train_reorder[,1:3])
 names(df1) <- paste0("CV", 1:3)
 df1$traintest <- "Train"
-#test
+#test set
 df2 <- as.data.frame(boot_cor_test_reorder[,1:3])
 names(df2) <- paste0("CV", 1:3)
 df2$traintest <- "Test"
@@ -344,7 +123,6 @@ df3 <- rbind(df1,df2)
 # reshape the data frame
 df_long <- gather(df3, CV, cors, CV1:CV3, factor_key=TRUE)
 df_long$cors <- abs(df_long$cors)
-
 
 data_summary <- function(x) {
   m <- mean(x)
@@ -370,23 +148,22 @@ p3 <- ggplot(df_long, aes(x = CV, y = abs(cors), fill = traintest)) +
   theme_bw()
 
 p3
-ggsave("train_test_boot_split7_3_violin_reorder.pdf", width = 8, height = 6)
+ggsave("train_test_boot_violin.pdf", width = 8, height = 6)
 
-boot_abcd[[31]]$cbcl_loading
 
 ######################################################
 ####### visualization of the CIs of cbcl loadings ####
 ######################################################
+
 cbclnames <- c("Anxious","Withdrawn","Somatic","Social","Thought","Attention","Rule Breaking","Aggression")
 # training set
 n_boot <- 1000
 boot_cbcl <- lapply(1:n_boot, function(i) {
   boot_abcd[[i]]$cbcl_loading[,cv_reorder_boot_abcd[[i]]$idx_reorder]})
 
-cbcl_sign <- sign(res.abcd.7$v)
+cbcl_sign <- sign(res.abcd.example$v)
 
-
-# cv1: attention, cv2: rule breaking, cv3:withdrawn, all +1
+# cv1: attention, cv2: aggression & rule breaking, cv3:withdrawn
 
 idx <- c(6,8,2) # this is the position of the most important cbcl syndrome scale (attention, aggression, withdrawn)
 df_cbcl <- lapply(1:3, function(i) {
@@ -407,9 +184,10 @@ df_cbcl <- do.call(rbind,df_cbcl)
 df_long_cbcl <- gather(df_cbcl, cbclsyndromes, loadings, cbclnames, factor_key = TRUE)
 
 
-############ combine three CVs together
-# Then I make the boxplot, asking to use the 2 factors : variety (in the good order) AND treatment :
+############ combine three CVs together and make the figures
+
 pdf(file="cbcl_loadings_boot_newsign.pdf", width=13, height=5)
+
 myplot <- boxplot(loadings ~ CV*cbclsyndromes, data=df_long_cbcl, 
                   boxwex=0.5, ylab="Canonical Loadings", outline=FALSE,
                   col=c("#A0D568","#F7EA48","#4FC1E8"), 
@@ -435,17 +213,19 @@ legend(23.5,-0.2, legend = c("CV1", "CV2", "CV3"),
 dev.off()
 
 
-
-######################################################
-####### visualization of the CIs of brain loadings ####
-######################################################
+#########################################################
+####### visualization of the CIs of brain loadings ######
+#########################################################
+                   
 # training set
 n_boot <- 1000
-
+                   
+# extract brain loadings
 boot_brain <- lapply(1:n_boot, function(i) {
   boot_abcd[[i]]$brain_loading[,cv_reorder_boot_abcd[[i]]$idx_reorder]})
 
-brain_sign <- sign(res.abcd.7$u)
+                   
+brain_sign <- sign(res.abcd.example$u)
 max1 <- which(rank(-abs(res.abcd.7$u[,1])) == 1)
 sign1 <- sign(res.abcd.7$u[max1,1])
 max2 <- which(rank(-abs(res.abcd.7$u[,2])) == 1)
