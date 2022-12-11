@@ -128,7 +128,7 @@ data_summary <- function(x) {
 }
 
 
-p3 <- ggplot(df_long, aes(x = CV, y = abs(cors), fill = traintest)) +
+p_cor <- ggplot(df_long, aes(x = CV, y = abs(cors), fill = traintest)) +
   geom_point(aes(col=traintest), position=position_jitter(height=.05, width=.25),alpha = .3)+ 
   introdataviz::geom_split_violin(alpha = .8, trim = FALSE) +
   stat_summary(fun.data = data_summary,geom="pointrange", show.legend = TRUE, 
@@ -143,7 +143,7 @@ p3 <- ggplot(df_long, aes(x = CV, y = abs(cors), fill = traintest)) +
   scale_color_manual(name="Training Test Set", values = c("#fbb172", "#d45365")) + 
   theme_bw()
 
-p3
+p_cor
 ggsave("train_test_boot_violin.pdf", width = 8, height = 6)
 
 
