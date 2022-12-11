@@ -1,11 +1,61 @@
-#############################################################
-############## functions used in the project ################
-#############################################################
+#######################################################################
+############## important functions used in the project ################
+#######################################################################
+
+
+######################################################
+####### Read the rs-fMRI matrices and vectorize ######
+######################################################
+
+make_brain_features <- function(subid){
+    
+    conMatDir <- ('/gpfs/work2/0/einf1049/scratch/bxu/ABCD_data_filtered/')
+    cl <- makePSOCKcluster(32)
+    registerDoParallel(cl)
+    
+    feature_list <- foreach::foreach(i = 1:length(subid), .packages=c("doParallel", "foreach")) %dopar% {
+        subID <- subid[i]
+        conMatCsv <- file.path(conMatDir, paste(subID, 'corMat_Gordon_fsSC_filtered', sep='_'))
+        conMatCsv <- paste(conMatCsv, 'csv', sep='.')
+        conMat <- as.matrix(read.table(conMatCsv))
+        feature_column <- conMat[upper.tri(conMat, diag = FALSE)]
+    }
+    
+    stopCluster(cl)
+    
+    feature_abcd <- do.call(rbind,feature_list)
+    feature_abcd <- as.data.frame(feature_abcd)
+    colnames(feature_abcd) <- paste0("F_", 1:ncol(feature_abcd))
+    
+    return(feature_abcd)
+}
+
+
+#############################
+####### Residualizaiton #####
+#############################
+
+
+residualization <- function(brain,confounders){
+    cl <- makePSOCKcluster(32)
+    registerDoParallel(cl)
+    
+    residual_list <- foreach::foreach(i = seq_along(brain), .packages=c("doParallel", "foreach")) %dopar% {
+        out <- residuals(lm(brain[, i] ~ confounders$age + confounders$sex + 
+                          confounders$race_ethnicity + confounders$site + confounders$parental_education, na.action=na.exclude))
+    }
+    
+    stopCluster(cl)
+    
+    brain_residual <- do.call(cbind, residual_list)
+    return(brain_residual)
+}
 
 
 ###########################
 ####### weighted PCA ######
 ###########################
+
 
 weighted_pca <- function(cbcl,brain,n) {
   rank <- rank(-rowSums(cbcl))
@@ -29,7 +79,9 @@ weighted_pca <- function(cbcl,brain,n) {
 ####### penalty parameters search ######
 ########################################
 
-####### create 100 resamples of the ABCD training set (100 training and validation sets)
+
+####### 1. create 100 resamples of the ABCD training set (100 training and validation sets)
+
 CV_sampling <- function(cbcl, brain, s_num, partition) {
   
   # s_num: number of resamples
@@ -72,7 +124,7 @@ CV_sampling <- function(cbcl, brain, s_num, partition) {
 
 
 
-######## Penalty parameters selection:part of the code is based on Xia et al.(2018) & Dinga et al.
+######## 2. Penalty parameters selection:part of the code is based on Xia et al.(2018) & Dinga et al. (2019)
 
 cca_resample_test_m <- function(X, Y, X2, Y2, pen_x, pen_y,nsample) { 
   # X and Y are training sets created by CV_sampling, 
@@ -103,7 +155,7 @@ cca_resample_test_m <- function(X, Y, X2, Y2, pen_x, pen_y,nsample) {
 }
 
 
-######## grid search
+######## 3. grid search: code is based on Dinga et al. (2019)
                     
 grid.search.cor.Testset <- function(X,Y,X2,Y2,pen_xseq,pen_yseq,nsample) {
   # X and Y are training sets created by CV_sampling, 
@@ -134,7 +186,7 @@ grid.search.cor.Testset <- function(X,Y,X2,Y2,pen_xseq,pen_yseq,nsample) {
 ####### covariance explained ######
 ###################################
 
-# Code is based on Xia et al.(2018)
+###### Code is based on Xia et al.(2018)
 VarianceExplain <- function(brain,cbcl,ccares, n) {
   residual_std <- apply(brain, 2, scale)
   cbcl_std <- apply(cbcl, 2, scale)
@@ -210,11 +262,6 @@ permutation_test_testset <- function(cbcl,brain,nperm, model,cors) {
   
   return(list(cor.perm=cor.perm, pval.perm=pval.perm))
 }
-
-
-
-
-
 
 
 
