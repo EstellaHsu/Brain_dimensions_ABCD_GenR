@@ -3,17 +3,13 @@
 ########################################################
 
 
-setwd("~/Desktop/ABCD_download/data/newdata_ReleaseQC/")
-
 allinfo <- readRDS("all_final_noNA_incidental_6529.rds")
 id <- allinfo$participant_id
 
-############# read the wisc data
-setwd("/Users/estella/Desktop/ABCD_download/abcd_wisc")
+############# read the NIH tool box data
 wisc <- read.delim("abcd_tbss01.txt")
 names(wisc)
 dim(wisc)
-
 wisc$participant_id <- sapply(as.character(wisc$src_subject_id), 
                             function(x) paste0("sub-NDAR", strsplit(x, "_")[[1]][2]))
 wisc <- wisc %>% filter(eventname == "baseline_year_1_arm_1")
