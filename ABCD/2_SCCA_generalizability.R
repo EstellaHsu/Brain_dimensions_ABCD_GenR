@@ -87,7 +87,7 @@ rs_train_test_abcd <- lapply(1:10, function(i) {
   res.abcd <- CCA(x=brain_train, z=cbcl_train, penaltyx = brain_pen, penaltyz = cbcl_pen, 
                   typex="standard", typez="standard",niter = 20, K=8)
   # permutation test of the canonical correlations in the training set
-  perm_abcd_train <- permutation_test(cbcl_train, brain_train, nperm=999, cbcl_pen, brain_pen,8,res.abcd$cors)
+  perm_abcd_train <- permutation_test(cbcl_train, brain_train, nperm=1999, cbcl_pen, brain_pen,8,res.abcd$cors)
   
   # project the CCA weights in the ABCD test set
   abcd.test <- test_project_weights(brain_test,cbcl_test,res.abcd,8)
