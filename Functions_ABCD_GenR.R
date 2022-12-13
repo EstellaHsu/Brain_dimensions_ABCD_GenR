@@ -6,7 +6,7 @@
 ######################################################
 ####### Read the rs-fMRI matrices and vectorize ######
 ######################################################
-
+# this is for ABCD
 make_brain_features <- function(subid){
     
     conMatDir <- ('/gpfs/work2/0/einf1049/scratch/bxu/ABCD_data_filtered/')
@@ -71,7 +71,7 @@ weighted_pca <- function(cbcl,brain,n) {
   rotation <- pca.weighted$rotation[,1:n]
   # the data with the reduced dimensionality
   feature_brain_reduced <- feature_brain_centered %*% rotation 
-  return(feature_brain_reduced)
+  return(brain_train_reduced=feature_brain_reduced, rotation = pca.weighted$rotation)
 }
 
 
