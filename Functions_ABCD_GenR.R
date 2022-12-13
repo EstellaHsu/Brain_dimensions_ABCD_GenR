@@ -124,7 +124,7 @@ CV_sampling <- function(cbcl, brain, s_num, partition) {
 
 
 
-######## 2. Penalty parameters selection:part of the code is based on Xia et al.(2018) & Dinga et al. (2019)
+######## 2. Penalty parameters selection:part of the code is based on Xia et al.(2018) 
 
 cca_resample_test_m <- function(X, Y, X2, Y2, pen_x, pen_y,nsample) { 
   # X and Y are training sets created by CV_sampling, 
@@ -155,7 +155,7 @@ cca_resample_test_m <- function(X, Y, X2, Y2, pen_x, pen_y,nsample) {
 }
 
 
-######## 3. grid search: code is based on Dinga et al. (2019)
+######## 3. grid search: code is based on Xia et al. (2018)
                     
 grid.search.cor.Testset <- function(X,Y,X2,Y2,pen_xseq,pen_yseq,nsample) {
   # X and Y are training sets created by CV_sampling, 
