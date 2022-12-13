@@ -149,3 +149,7 @@ levels(final_imp$maternal_edu) <- list( "low" = 0:1,
                                         "high" = 4:5)
 
 saveRDS(final_imp, "final_imp_cbcl_covariates.rds")
+
+
+
+
