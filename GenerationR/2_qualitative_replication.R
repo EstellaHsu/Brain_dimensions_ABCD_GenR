@@ -2,7 +2,7 @@
 ################### Greneration R: qualitative repplication ########################
 ####################################################################################
 # This is the total sample of generaiton R
-# we will run the whole analysis pipeline here
+# we ran the whole analysis pipeline here
 
 
 ########## load all the packages
@@ -20,7 +20,7 @@ lapply(packages, require, character.only = TRUE)
 ###################################
 ####### 1. Read the data 
 ###################################
-### read the data: because I did different imputation based on syndrome scale and item level, I have different residual matrix
+### read the data: brain PCs and CBCL data
 brain_genr <- readRDS("brain_genr.rds")
 dim(brain_genr)
 cbcl_genr <- readRDS("cbcl_genr.rds")
@@ -35,7 +35,7 @@ res.genr <- CCA(x=brain_genr, z=cbcl_genr, penaltyx = 0.5, penaltyz = 0.5, typex
                 niter = 20, K=8)
 
 # visualize the loadings:
-cbcl_loading <- abs(res.wei.syn$v)
+cbcl_loading <- abs(res.genr$v)
 rownames(cbcl_loading)  <- c("anxious","withdrawn","somatic","social","thought","attention","rule_breaking","aggression")
 
 corrplot(t(cbcl_loading)[1:8,], method="color", 
@@ -60,7 +60,7 @@ perm_genr_total <- permutation_test(cbcl_genr, brain_genr,
 ##################################
 ######### circular radar plot
 ##################################
-temp <- abs(res.wei.syn$v)
+temp <- abs(res.genr$v)
 df_temp1 <- as.data.frame(temp)
 df_temp1 <- t(df_temp1)
 df_temp2 <- rbind(rep(1,8), df_temp1)
@@ -89,7 +89,7 @@ dev.off()
 ##################################
 for(i in 1:6){
   for(j in 1:5){
-    cor_abcd_genr <- cor(cbcl_mean[,i], res.wei.syn$v[,j]) # cbcl_mean is the average CBCL loadings across 10 train-test splits
+    cor_abcd_genr <- cor(cbcl_mean[,i], res.genr$v[,j]) # cbcl_mean is the average CBCL loadings across 10 train-test splits
     out <- paste0("abcd_CV",i,"  genr_CV",j,":", round(cor_abcd_genr,2))
     print(out)
   }
