@@ -242,9 +242,9 @@ parcels <- unique(labels_group)
 ######################################
 ####### create the heatmap
 ######################################
-This is an example 
+# This is an example for the first canonical variate
 
-# build an empty brain matrix
+# build an empty 352 * 352 brain matrix
 brainMat <- matrix(NA,352,352)
 # fill in the brain loadings for the first canonical variate (others are the same)
 brainMat[upper.tri(brainMat)] <- corBrCv1
