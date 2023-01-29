@@ -14,11 +14,14 @@ packages <- c('psych','doParallel','permute','reshape2','PMA','caret','corrplot'
 
 
 lapply(packages, require, character.only = TRUE)
+
 ###############################################################
 ############## Visualization of correlations across 10 splits 
 ###############################################################
+
 ####### reorder the canonical variates
-rs_train_test_abcd <- readRDS("rs_train_test_abcd.rds")
+rs_train_test_abcd <- readRDS("rs_train_test_abcd.rds") #this is the output of the SCCA model (see "2_SCCA_generalizability.R")
+
 # the reference split: choose one split as the reference split
 load_std <- res.abcd.ref$v # the loadings for CBCL
 
@@ -341,10 +344,8 @@ col <- c("Default"="#d55365", "Salience"="#afe0a9", "VentralAttn"="#fbb172",
          "FrontoParietal"="#5390bf", "MedialParietal"="#FFE43F","DorsalAttn"="#B097D6",
          "Visual"="#a2335d", "SMhand"="#B7E457", "SMmouth"="#F9F34B","None"="grey")
 
-
 pdf("brain_connectogram_cv1_average10.pdf", width=8, height=8)
 par(cex = 1.0, mar = c(0, 0, 0, 0))
 chordDiagram(fig_con, grid.col = col, annotationTrack = c("name","grid"),
              annotationTrackHeight = c(0.01, 0.08))
 dev.off()
-
