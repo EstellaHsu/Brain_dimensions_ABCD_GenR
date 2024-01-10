@@ -106,10 +106,11 @@ rs_train_test_abcd <- lapply(1:10, function(i) {
 
 
 
+##################################################
+############## multiple testing correction #######
+##################################################
 
+lapply(1:10, function(x) {p.adjust(rs_train_test_abcd[[x]]$abcd.test.perm[i], "fdr")})
 
-
-
-
-
+lapply(1:10, function(x) {p.adjust(rs_train_test_abcd[[x]]$genr.perm[i], "fdr")})
 
