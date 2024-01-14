@@ -31,7 +31,7 @@ dim(cbcl_genr)
 ###################################
 # the penalty parameters were selected based on the most selected parameters in ABCD (see Table 1)
 
-res.genr <- CCA(x=brain_genr, z=cbcl_genr, penaltyx = 0.5, penaltyz = 0.5, typex="standard", typez="standard",
+res.genr <- CCA(x=brain_genr, z=cbcl_genr, penaltyx = 0.6, penaltyz = 0.5, typex="standard", typez="standard",
                 niter = 20, K=8)
 
 # visualize the loadings:
@@ -94,4 +94,5 @@ for(i in 1:6){
     print(out)
   }
 }
+
 
