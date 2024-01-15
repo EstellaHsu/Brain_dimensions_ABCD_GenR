@@ -9,13 +9,13 @@
 # this is for ABCD
 make_brain_features <- function(subid){
     
-    conMatDir <- ('/gpfs/work2/0/einf1049/scratch/bxu/ABCD_data_filtered/')
+    conMatDir <- ('PATH TO YOUR DATA')
     cl <- makePSOCKcluster(32)
     registerDoParallel(cl)
     
     feature_list <- foreach::foreach(i = 1:length(subid), .packages=c("doParallel", "foreach")) %dopar% {
         subID <- subid[i]
-        conMatCsv <- file.path(conMatDir, paste(subID, 'corMat_Gordon_fsSC_filtered', sep='_'))
+        conMatCsv <- file.path(conMatDir, paste(subID, 'corMat_Gordon_fsSC_filtered', sep='_')) # path to the data
         conMatCsv <- paste(conMatCsv, 'csv', sep='.')
         conMat <- as.matrix(read.table(conMatCsv))
         feature_column <- conMat[upper.tri(conMat, diag = FALSE)]
@@ -35,7 +35,7 @@ make_brain_features <- function(subid){
 ####### Residualizaiton #####
 #############################
 
-
+# this is for ABCD
 residualization <- function(brain,confounders){
     cl <- makePSOCKcluster(32)
     registerDoParallel(cl)
@@ -264,14 +264,68 @@ permutation_test_testset <- function(cbcl,brain,nperm, model,cors) {
 }
 
 
+########################## create date frames used for brain visualization 
 
 
-
-
-
-
-
-
-
+heatmap_parcels <- function(weights) {
+  
+  brainMat <- matrix(NA,349,349)
+  brainMat[upper.tri(brainMat)] <- weights
+  brainMat[lower.tri(brainMat, diag = F)] <- t(brainMat)[lower.tri(brainMat)]
+  #diag(brainMat) <- max(brainMat)
+  colnames(brainMat) <- labels_group_sub
+  rownames(brainMat) <- labels_group_sub
+  
+  group_connect <- matrix(0,length(parcels_sub),length(parcels_sub))
+  colnames(group_connect) <- parcels_sub
+  rownames(group_connect) <- parcels_sub
+  m_connect <- brainMat
+  
+  # calculate within and between modules connectivity
+  
+  fig_df <- lapply(seq_along(parcels_sub), function(i){
+    
+    idxr <- which(rownames(m_connect) == parcels_sub[i])
+    M <- sum(rownames(m_connect) == parcels_sub[i], na.rm = TRUE)
+    within_con <- m_connect[idxr, idxr]
+    within_load <- 2*sum(within_con, na.rm = TRUE)/(M * (M-1))
+    
+    if(i < 14){ # when i = 14, j will be 15. 
+      between_con <- lapply((i+1):length(parcels_sub), function(j) {
+        idxc <-  which(colnames(m_connect) == parcels_sub[j])
+        between <- m_connect[idxr, idxc]
+        M <- sum(rownames(m_connect) == parcels_sub[i],na.rm = TRUE)
+        N <- sum(colnames(m_connect) == parcels_sub[j],na.rm = TRUE)
+        list(M = M, N = N, between_con = between, from = parcels_sub[i], to = parcels_sub[j])})
+    } else {between_con <- NULL}
+    
+    between_load <- data.frame()
+    for (j in seq_along(between_con)){
+      M <- unlist(between_con[[j]][1])
+      N <- unlist(between_con[[j]][2])
+      conM <- between_con[[j]][3]
+      bet_load <- sum(unlist(conM),na.rm = TRUE)/(M * N)
+      from <- unlist(between_con[[j]][4])
+      to <- unlist(between_con[[j]][5])
+      temp <- data.frame(loadings = bet_load, from = from, to = to)
+      between_load <- rbind(between_load, temp)
+    }
+    
+    df1 <- data.frame(loadings = within_load, from = parcels_sub[i], to = parcels_sub[i])
+    df2 <- rbind(df1, between_load)
+    list(within_load = within_load, between_load = between_load, fig = df2)
+    
+  })
+  
+  fig_temp <- do.call(rbind, lapply(fig_df, function(x) {x$fig}))
+  
+  fig_connecto <- as.data.frame(fig_temp)
+  
+  
+  within <- do.call(rbind, lapply(fig_df, function(x) {x$within_load}))
+  between <- do.call(rbind, lapply(fig_df, function(x) {x$between_load}))
+  
+  return(list(within = within, between = between, fig_connecto=fig_connecto))
+}
 
 
