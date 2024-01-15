@@ -15,9 +15,9 @@ packages <- c('psych','doParallel','permute','reshape2','PMA','caret','corrplot'
 
 lapply(packages, require, character.only = TRUE)
 
-###############################################################
-############## Visualization of correlations across 10 splits 
-###############################################################
+#######################################################################
+############## Figure 2: Visualization of correlations across 30 splits 
+#######################################################################
 
 ####### reorder the canonical variates
 rs_train_test_abcd <- readRDS("rs_train_test_abcd.rds") #this is the output of the SCCA model (see "2_SCCA_generalizability.R")
@@ -50,44 +50,44 @@ new_cv_reorder  <- lapply(seq_along(rs_train_test_abcd), function(j) {
   
 })
 
+######## extract the correlations
+##### example: correlation 1
+abcd_training_cor <- unlist(lapply(1:30, function(x) {
+  i <- new_cv_reorder[[x]]$idx_reorder[1]
+  rs_train_test_abcd_fmriprep_FD0.25[[x]]$abcd.train$cors[i]}))
 
-###### reorder the correlations
-traincor <- lapply(rs_train_test_abcd, function(x) {x$abcd.train$cors})
-traincor <- do.call(rbind,traincor)
-traincor_reorder <- lapply(1:10, function(i) {traincor[i, new_cv_reorder[[i]]$idx_reorder]})
-traincor_reorder <- do.call(rbind,traincor_reorder)
-rownames(traincor_reorder) <- paste0("split",1:10)
-colnames(traincor_reorder) <- paste0("CV",1:6)
-meantrain <- colMeans(traincor_reorder)
-sdtrain <- apply(traincor_reorder, 2, sd)
+abcd_test_cor <- unlist(lapply(1:30, function(x) {
+  i <- new_cv_reorder[[x]]$idx_reorder[1]
+  rs_train_test_abcd_fmriprep_FD0.25[[x]]$abcd.test[i]}))
+mean(abs(abcd_test_cor))
 
+genr_cor <- unlist(lapply(1:30, function(x) {
+  i <- new_cv_reorder[[x]]$idx_reorder[1]
+  rs_train_test_abcd_fmriprep_FD0.25[[x]]$res.genr[i]}))
 
-testcor <- lapply(rs_train_test_abcd, function(x) {x$abcd.test})
-testcor <- do.call(rbind,testcor)
-testcor_reorder <- lapply(1:10, function(i) {testcor[i, new_cv_reorder[[i]]$idx_reorder]})
-testcor_reorder <- do.call(rbind,testcor_reorder)
-rownames(testcor_reorder) <- paste0("split",1:10)
-colnames(testcor_reorder) <- paste0("CV",1:6)
-meantest <- colMeans(testcor_reorder)
-sdtest <- apply(testcor_reorder, 2, sd)
+mean(abs(genr_cor))
 
-fig_10splits_syn <- data.frame(Train_Test = rep(c("Training set","Test set"),each=3), meancor = c(meantrain[1:3], meantest[1:3]),
-                               sdcor = c(sdtrain[1:3], sdtest[1:3]), CV=rep(paste0("CV",1:3),2))
+df_cor <- data.frame(Samples = factor(rep(c("GenR", "ABCD_test","ABCD_training"), each=30), 
+                                      levels=c("GenR","ABCD_test", "ABCD_training")), 
+                     Correlations = c(abs(genr_cor),abs(abcd_test_cor), abs(abcd_training_cor)))
 
-
-p_cor <- ggplot(fig_10splits_syn, aes(x=CV, y=meancor, color=Train_Test, group=Train_Test)) + 
-  scale_color_manual(name="Training Test Set", values = c("#fbb172", "#E64659")) + 
-  geom_errorbar(aes(ymin=meancor-sdcor, ymax=meancor+sdcor), width=.2, size=2) +
-  geom_point(size=5) + ylim(c(0, 0.25)) + 
-  theme_bw() + labs(y = "canonical correlations", x = "canonical variates", size=5) +
-  theme(axis.text=element_text(size=12),
+##### boxplot: figure 2b
+p <- ggplot(df_cor,aes(Samples,Correlations))+
+  geom_boxplot(aes(fill=Samples, color=Samples),alpha=.8, width=0.6)+
+  scale_color_manual(values = c("#490DA0","#EEB605","#E5500F"))+
+  scale_fill_manual(values = c("#AF7AC5","#F4D03F","#F39C12"))+
+  new_scale_color()+
+  geom_jitter(aes(color=Samples),size=3,alpha=.3)+
+  scale_color_manual(values = c("#AF7AC5","#F4D03F","#F39C12"))+
+  coord_flip()+
+  ggtitle("3rd canonical correlation") + 
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 11),
+        axis.text.y = element_text(size = 11),
         axis.title=element_text(size=12,face="bold"),
-        legend.title = element_text(size=13,face="bold"),
-        legend.text = element_text(size=13))
-p_cor
-
+        plot.title = element_text(size = 13, face = "bold")) 
+p
 ggsave("train_test_correlations.pdf", width = 8.5, height = 6)
-
 
 
 ###############################################################
@@ -106,6 +106,7 @@ df_temp <- as.data.frame(temp)
 ##################################
 ######### circular radar plot
 ##################################
+# figure 2a
 df_temp1 <- t(df_temp)
 df_temp2 <- rbind(rep(1,8), df_temp1)
 colnames(df_temp2) <- c("Anxious","Withdrawn","Somatic","Social","Thought","Attention","Rule breaking","Aggression")
@@ -133,7 +134,7 @@ dev.off()
 ########################################################
 ############## Covariance explained  ###################
 ########################################################
-
+# figure 2c
 # This is an example from one of the 10 train-test splits
 # example for the training set
 # code for the test set is the same, just need to change the "brain_train" to "brain_test", "cbcl_train" to "cbcl_test"
@@ -159,7 +160,7 @@ ggsave("covariance_explained_trainset.pdf",width=8,height=4)
 
 # This is an example from one of the 10 train-test splits
 # example for the test set
-
+# figure 2d
 cor.abcd.test.example <- test_project_weights(brain_test, cbcl_test, res.abcd.example, 8)
 perm_abcdtest.example <- permutation_test_testset(cbcl_test, brain_test,nperm=1999, 
                                            res.abcd.example,cor.abcd.test.example)
@@ -188,7 +189,7 @@ dev.off()
 #######################################################################
 ############################ Brain figures  ###########################
 #######################################################################
-
+# figure 3, supplementary figure 2
 
 ########################################
 ######## Read the data 
@@ -222,7 +223,6 @@ cor_brain_cv <- do.call(rbind,cor_brain_cv)
 
 corBrCv1 <- cor_brain_cv[, 1]
 corBrCv2 <- cor_brain_cv[, 2]
-corBrCv3 <- cor_brain_cv[, 3]
 
 ########################################
 ######## read the brain labels
@@ -247,73 +247,30 @@ parcels <- unique(labels_group)
 ######################################
 # This is an example for the first canonical variate
 
-# build an empty 352 * 352 brain matrix
-brainMat <- matrix(NA,352,352)
-# fill in the brain loadings for the first canonical variate (others are the same)
-brainMat[upper.tri(brainMat)] <- corBrCv1
-brainMat[lower.tri(brainMat, diag = F)] <- t(brainMat)[lower.tri(brainMat)]
-colnames(brainMat) <- labels_group_sub
-rownames(brainMat) <- labels_group_sub
+abcd_cv <- corBrCv1
 
-# build an empty matrix for the parcels-based matrix
-group_connect <- matrix(0,length(parcels_sub),length(parcels_sub))
-colnames(group_connect) <- parcels_sub
-rownames(group_connect) <- parcels_sub
+fig_con <- heatmap_parcels(abcd_cv)
 
-m_connect <- brainMat
-# calculate within and between modules connectivity: equations based on Xia et al. (2018)
+########## build a empty connectivtiy matrix
+# remove the none network
+group_connect <- matrix(0,length(parcels_sub)-1,length(parcels_sub)-1)
+colnames(group_connect) <- parcels_sub[-1]
+rownames(group_connect) <- parcels_sub[-1]
 
-fig_df <- lapply(seq_along(parcels_sub), function(i){
-  
-  idxr <- which(rownames(m_connect) == parcels_sub[i])
-  M <- sum(rownames(m_connect) == parcels_sub[i])
-  within_con <- m_connect[idxr, idxr]
-  within_load <- 2*sum(within_con, na.rm = TRUE)/(M * (M-1))
-  
-  if(i < 14){ 
-    between_con <- lapply((i+1):length(parcels_sub), function(j) {
-      idxc <-  which(colnames(m_connect) == parcels_sub[j])
-      between <- m_connect[idxr, idxc]
-      M <- sum(rownames(m_connect) == parcels_sub[i])
-      N <- sum(colnames(m_connect) == parcels_sub[j])
-      list(M = M, N = N, between_con = between, from = parcels_sub[i], to = parcels_sub[j])})
-  } else {between_con <- NULL}
-  
-  between_load <- data.frame()
-  for (j in seq_along(between_con)){
-    M <- unlist(between_con[[j]][1])
-    N <- unlist(between_con[[j]][2])
-    conM <- between_con[[j]][3]
-    bet_load <- sum(unlist(conM))/(M * N)
-    from <- unlist(between_con[[j]][4])
-    to <- unlist(between_con[[j]][5])
-    temp <- data.frame(loadings = bet_load, from = from, to = to)
-    between_load <- rbind(between_load, temp)
-  }
-  
-  df1 <- data.frame(loadings = within_load, from = parcels_sub[i], to = parcels_sub[i])
-  df2 <- rbind(df1, between_load)
-  list(within_load = within_load, between_load = between_load, fig = df2)
-  
-})
-
-
-# extract between and within loadings
-within <- do.call(rbind, lapply(fig_df, function(x) {x$within_load}))
-between <- do.call(rbind, lapply(fig_df, function(x) {x$between_load}))
-
-# calculate the z scores
-group_connect[lower.tri(group_connect)] <- scale(between$loadings)
-group_fig <- t(group_connect)
-group_fig[lower.tri(group_fig)] <- scale(between$loadings)
-diag(group_fig) <- scale(within)
-
-breaksList <- seq(-2, 2, by = 0.1)
+############ 
+fig_connecto <- fig_con$fig_connecto[-c(1:14),] # remove the none network
+loadings <- scale(fig_connecto$loadings)
+group_connect[lower.tri(group_connect, diag = TRUE)] <- loadings
+group_connect[upper.tri(group_connect, diag = FALSE)] <- t(group_connect)[upper.tri(group_connect, diag = FALSE)]
+group_fig <- group_connect
+range(group_fig)
+# the break point can be changed
+breaksList <- seq(-4.11, 2.2, by = 0.1)
 length(breaksList)
-cols <- c(colorRampPalette(c("#4575b4","#abd9e9"))(12), rep("white", 18), colorRampPalette(c("#eff121","#e93131"))(11))
 
+cols <- c(colorRampPalette(c("#4575b4","#abd9e9"))(36), rep("white", 12), colorRampPalette(c("#eff121","#e93131"))(16))
 
-pdf("brain_heatmap_cv1_average10.pdf", width=5.5, height=5)
+pdf("brain_heatmap_cv1.pdf", width=5.5, height=5)
 
 pheatmap(group_fig, treeheight_row = 0, treeheight_col = 0, 
          cluster_rows = F, cluster_cols = F,
@@ -327,25 +284,24 @@ dev.off()
 ################### connectogram 
 #########################################################
 
-fig_temp <- do.call(rbind, lapply(fig_df, function(x) {x$fig}))
-fig_connecto <- as.data.frame(fig_temp)
+fig_connectogram <- data.frame(from=fig_connecto$from, to=fig_connecto$to,
+                               value=scale(fig_connecto$loadings))
+# the top 20%
+upper <- quantile(fig_connectogram$value, probs = .90)
+lower <- quantile(fig_connectogram$value, probs = .10)
 
-fig_con <- data.frame(from=fig_connecto$from, to=fig_connecto$to,
-                      value=scale(fig_connecto$loadings))
-higher <- quantile(fig_con$value, probs = .975)
-lower <- quantile(fig_con$value, probs = .025)
-
-# just present the top 5% important brain networks
-# < 97.5% or > 2.5%
-fig_con[fig_con < higher & fig_con > lower] <- 0
+fig_connectogram[fig_connectogram < upper & fig_connectogram > lower ] <- 0
 
 col <- c("Default"="#d55365", "Salience"="#afe0a9", "VentralAttn"="#fbb172",
          "Auditory"="#93C6F6", "Subcortical"="#83DFEA", "ParietoOccip"= "#77c6a9",
-         "FrontoParietal"="#5390bf", "MedialParietal"="#FFE43F","DorsalAttn"="#B097D6",
-         "Visual"="#a2335d", "SMhand"="#B7E457", "SMmouth"="#F9F34B","None"="grey")
+         "FrontoParietal"="#5390bf", "MedialParietal"="#FFE43F","DorsalAttn"="#17375F",
+         "Visual"="#a2335d", "SMhand"="#B7E457", "SMmouth"="#F9F34B","None"="grey", 
+         "CinguloOperc"="#B097D6")
 
-pdf("brain_connectogram_cv1_average10.pdf", width=8, height=8)
+pdf("abcd_connectogram_cv1.pdf", width=8, height=8)
 par(cex = 1.0, mar = c(0, 0, 0, 0))
-chordDiagram(fig_con, grid.col = col, annotationTrack = c("name","grid"),
+chordDiagram(fig_connectogram, grid.col = col, annotationTrack = c("name","grid"),
              annotationTrackHeight = c(0.01, 0.08))
+
 dev.off()
+
