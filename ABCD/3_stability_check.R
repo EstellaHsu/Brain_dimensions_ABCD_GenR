@@ -27,7 +27,7 @@ cbcl_train <- rs_example$cbcl_train
 brain_test <- as.matrix(rs_example$brain_test) %*% rs_example$pca_train$rotation[, 1:100]
 cbcl_test <- rs_example$cbcl_test 
 # penalty parameters are based on grid search in the second SCCA step. 
-res.abcd.example <- CCA(x=brain_train, z=cbcl_train, penaltyx = 0.5, penaltyz = 0.5, typex="standard", typez="standard",
+res.abcd.example <- CCA(x=brain_train, z=cbcl_train, penaltyx = 0.7, penaltyz = 0.5, typex="standard", typez="standard",
                   niter = 20, K=8)
 res.abcd.example
 
