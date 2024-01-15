@@ -29,9 +29,9 @@ dim(cbcl_genr)
 ###################################
 ####### 2. Fit the sCCA model  
 ###################################
-# the penalty parameters were selected based on the most selected parameters in ABCD (see Table 1)
+# the penalty parameters were selected based on the most selected parameters in ABCD 
 
-res.genr <- CCA(x=brain_genr, z=cbcl_genr, penaltyx = 0.6, penaltyz = 0.5, typex="standard", typez="standard",
+res.genr <- CCA(x=brain_genr, z=cbcl_genr, penaltyx = 0.7, penaltyz = 0.5, typex="standard", typez="standard",
                 niter = 20, K=8)
 
 # visualize the loadings:
@@ -55,7 +55,7 @@ ggplot(vardf, aes(x=principal_components, y=Covariance_explained))+
 ###################################
 
 perm_genr_total <- permutation_test(cbcl_genr, brain_genr, 
-                                    nperm=1999, 0.5, 0.5, 8, res.wei.syn$cors)
+                                    nperm=1999, 0.7, 0.5, 8, res.wei.syn$cors)
 
 ##################################
 ######### circular radar plot
@@ -85,14 +85,36 @@ ggsave("radarfigure_genr.pdf", width = 12, height = 6)
 dev.off()
 
 ##################################
-######### calculate correlations between ABCD and Generation R CBCL loadings
+######### calculate cross-cohort correlations between ABCD and Generation R CBCL variate scores
 ##################################
-for(i in 1:6){
-  for(j in 1:5){
-    cor_abcd_genr <- cor(cbcl_mean[,i], res.genr$v[,j]) # cbcl_mean is the average CBCL loadings across 10 train-test splits
-    out <- paste0("abcd_CV",i,"  genr_CV",j,":", round(cor_abcd_genr,2))
-    print(out)
-  }
+
+cor_cbcl_scores <- function(x,y, nperm){
+    # x: cbcl loadings from GenR
+    # y: averaged cbcl loadings from ABCD
+    # from ABCD to GenR
+    score1 <- as.vector(x %*%t(cbcl_genr_rsfmri))
+    score2  <- as.vector(y %*%t(cbcl_genr_rsfmri)) 
+    corr_genr <- cor(score1,score2)
+    r.per <- replicate(nperm, expr = cor (x = score1, y = sample (score2)))
+    p_genr <- sum(abs(r.per) >= abs(corr_genr))/(nperm+1)
+    # from GenR to ABCD
+    score1 <- as.vector(x %*%t(cbcl_abcd_rsfmri))
+    score2 <- as.vector(y %*%t(cbcl_abcd_rsfmri))
+    corr_abcd <- cor(score1,score2)
+    r.per <- replicate(nperm, expr = cor (x = score1, y = sample (score2)))
+    p_abcd <- sum(abs(r.per) >= abs(corr_abcd))/(nperm+1)
+    return(list(cor_genr=corr_genr, p_genr=p_genr, cor_abcd=corr_abcd, p_abcd=p_abcd))
 }
 
+### attention problems
+nperm <- 4999
+# from ABCD to GenR
+# c_mean is the mean cbcl loadings from ABCD
+cor_att <- cor_cbcl_scores(res.genr$v[,4], c_mean[,1], nperm)
+
+### aggressive/rule breaking behaviors
+cor_agg <- cor_cbcl_scores(res.genr$v[,2], c_mean[,2], nperm)
+
+### withdrawn behaviors
+cor_agg <- cor_cbcl_scores(res.genr$v[,3], c_mean[,3], nperm)
 
