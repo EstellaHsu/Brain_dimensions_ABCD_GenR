@@ -11,7 +11,7 @@ library(permute)
 #####################################
 cbcl_demo <- readRDS("final_imp_cbcl_covariates.rds")
 subid <- cbcl_demo$IDC
-conMatDir <- ('/home/r051950/resting_state_calculation/Gordon_new_AROMAOnly/corMatZ.hcpMMP_fsSC.8pAroma/')
+conMatDir <- ('PATH TO YOUR DATA')
  
 cl <- makePSOCKcluster(12)
 registerDoParallel(cl)
