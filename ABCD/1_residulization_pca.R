@@ -5,14 +5,14 @@
 library(doParallel)
 library(permute)
 
-############### read the data (10 train-test splits)
+############### read the data (30 train-test splits)
 
 train <- readRDS("all_final_train.rds")
 test <- readRDS("all_final_test.rds") 
 
 ############### residualization and weighted PCA separately for ABCD training and ABCD test 
 
-train_test_split <- lapply(1:10, function(i) {
+train_test_split <- lapply(1:30, function(i) {
 
     train0 <- train[[i]]
     subid_train <- train0$participant_id
