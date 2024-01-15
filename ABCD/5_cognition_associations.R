@@ -35,11 +35,11 @@ dim(wisc_abcd)
 ########################################################
 ############## Calculate canonical scores ##############
 ########################################################
-# calculate the brain CV scores based on the average brain canonical weights across 10 splits
+# calculate the brain CV scores based on the average brain canonical weights across 30 splits
 CV_abcd_total <- scale(brain_whole) %*% brain_mean
 
 df_cvs <- data.frame(participant_id=id, cv1=CV_abcd_total[,1], 
-                     cv2=CV_abcd_total[,2], cv3=CV_abcd_total[,3])
+                     cv2=CV_abcd_total[,2])
 
 
 ########################################################
@@ -77,22 +77,18 @@ cognition <- function(cv, outcome) {
                                                                                                   
 matrix_cv1 <- cognition("cv1", "matrix")
 matrix_cv2 <- cognition("cv2", "matrix")                                                
-matrix_cv3 <- cognition("cv3", "matrix") 
 # make the html table
 tab_model(matrix_cv1,matrix_cv2,matrix_cv3)                                             
 
 fluid_cv1 <- cognition("cv1", "fluid")
-fluid_cv2 <- cognition("cv2", "fluid")                                                
-fluid_cv3 <- cognition("cv3", "fluid")                                                 
+fluid_cv2 <- cognition("cv2", "fluid")                                                                                               
 tab_model(fluid_cv1,fluid_cv2,fluid_cv3)  
                                                  
 cryst_cv1 <- cognition("cv1", "cryst")
-cryst_cv2 <- cognition("cv2", "cryst")                                                
-cryst_cv3 <- cognition("cv3", "cryst")                                                 
+cryst_cv2 <- cognition("cv2", "cryst")                                                                                               
 tab_model(fluid_cv1,fluid_cv2,fluid_cv3) 
                                                  
 total_cv1 <- cognition("cv1", "total")
-total_cv2 <- cognition("cv2", "total")                                                
-total_cv3 <- cognition("cv3", "total")                                                 
+total_cv2 <- cognition("cv2", "total")                                                                                                
 tab_model(fluid_cv1,fluid_cv2,fluid_cv3)                                                   
                                                  
