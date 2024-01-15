@@ -2,7 +2,7 @@
 
 This is the code repository for the manuscript: 
 
-_**Multivariate brain-based dimensions of child psychiatric problems: degrees of generalizability**_
+_**Limited generalizability of multivariate brain-based dimensions of child psychiatric problems**_
 
 
 
