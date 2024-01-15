@@ -258,7 +258,7 @@ permutation_test_testset <- function(cbcl,brain,nperm, model,cors) {
   stopCluster(cl)
   
   cor.perm <- do.call(rbind, perm_cor)
-  pval.perm <- sapply(1:6, function(x){length(which(abs(cor.perm[, x]) >= abs(cors[x])))/(n.perm+1)})
+  pval.perm <- sapply(1:3, function(x){length(which(abs(cor.perm[, x]) >= abs(cors[x])))/(n.perm+1)})
   
   return(list(cor.perm=cor.perm, pval.perm=pval.perm))
 }
