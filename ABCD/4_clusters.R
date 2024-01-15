@@ -4,7 +4,7 @@
 
 
 ###############################################################
-############## brain canonical weights across 10 splits 
+############## brain canonical weights across 30 splits 
 ###############################################################
 
 ####### reorder the canonical variates
@@ -57,8 +57,8 @@ brain_cvscores_average10 <- scale(brain_whole) %*% brain_mean
 ######### clustering 
 #############################################
 
-# choose the first 3 brain CVs
-scca_brain <- brain_cvscores_average10[, 1:3]
+# choose the first 2 brain CVs
+scca_brain <- brain_cvscores_average10[, 1:2]
 
 ######### the following code are from Dinga et al., 2019
 
@@ -68,8 +68,7 @@ res.hc <- hclust(d, method = "ward.D")
 clusters <- cutree(res.hc, k = 2)
 
 df.clu.figure <- data.frame(CV1 = unlist(cca_brain_1[, 1]), 
-                            CV2 = unlist(cca_brain_1[, 2]),
-                            CV3 = unlist(cca_brain_1[, 3]))
+                            CV2 = unlist(cca_brain_1[, 2]))
 df.clu.figure$clusters <- clusters
 
 
@@ -103,15 +102,6 @@ sl <- ggplot(fit_sl, aes(number, values))+
   theme_bw()
 
 grid.arrange(ch, sl, ncol=2)
-
-# 3-D visualization 
-df.clu.figure <- data.frame(CV1 = unlist(cca_brain_1[, 1]), 
-                            CV2 = unlist(cca_brain_1[, 2]),
-                            CV3 = unlist(cca_brain_1[, 3]))
-df.clu.figure$clusters <- clusters
-
-plot_ly(df.clu.figure, x = ~CV1, y = ~CV2, z = ~CV3, 
-        color = ~clusters, marker = list(size=3.5), colors = c("skyblue2", "gold1"))
 
 
 # significance test
