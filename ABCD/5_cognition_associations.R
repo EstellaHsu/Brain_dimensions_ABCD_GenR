@@ -3,7 +3,7 @@
 ###############################################################################################
 
 ############ read the information of all the included participants
-allinfo <- readRDS("all_final_noNA_incidental_6529.rds")
+allinfo <- readRDS("all_final_noNA_incidental.rds")
 id <- allinfo$participant_id
 
 ############# read the NIH tool box data
