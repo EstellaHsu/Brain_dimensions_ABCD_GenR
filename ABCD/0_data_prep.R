@@ -53,6 +53,19 @@ qc1 <- qc_rs %>% filter(eventname == "baseline_year_1_arm_1")
 rsfmri_qc <- qc1[,c("participant_id","imgincl_rsfmri_include")]
 
 #########################################
+#brain data QC 2: framewise displacement
+#########################################
+                               
+fd_abcd <- read.delim("abcd_betnet02.txt")
+fd_abcd$participant_id <- sapply(as.character(fd_abcd$src_subject_id), 
+                                 function(x) paste0("sub-NDAR", strsplit(x, "_")[[1]][2]))
+fd1 <- fd_abcd %>% filter(as.character(eventname) == "baseline_year_1_arm_1")
+
+fd_info <- fd1[, c("participant_id","rsfmri_c_ngd_meanmotion")]
+fd_info$rsfmri_c_ngd_meanmotion <- as.numeric(fd_info$rsfmri_c_ngd_meanmotion)
+
+                             
+#########################################
 #brain data incidental findings
 #########################################
 
@@ -71,7 +84,7 @@ rsfmri_qc2 <- qc2[,c("participant_id","mrif_score")]
 #########################################
 
 #put all data frames into list
-df_list <- list(rsfmri_qc, rsfmri_qc2, twin_info, site_info, demo_info)
+df_list <- list(rsfmri_qc, rsfmri_qc2, twin_info, site_info, demo_info, fd_info)
 
 #merge all data frames in list
 all_info <- df_list %>% reduce(full_join, by='participant_id')
@@ -79,16 +92,17 @@ dim(all_info)
 
 # 1. id has connectivity matrices
 all_info <- all_info %>% filter(participant_id %in% id)
+dim(all_info)
 
 # 2. inclusion criteria
-all_info1 <- all_info %>% filter(imgincl_rsfmri_include == 1 & mrif_score < 3)
+all_info1 <- all_info %>% filter(imgincl_rsfmri_include == 1 & mrif_score < 3 & rsfmri_c_ngd_meanmotion < 0.25)
 dim(all_info1)
 
-# 2. remove twin/siblings
+# 3. remove twin/siblings
 all_info2 <- all_info1[!duplicated(all_info1$rel_family_id), ]
 dim(all_info2)
-                                     
-                                     
+
+                                                                    
 ########################################
 #merge CBCL
 #########################################
@@ -149,42 +163,16 @@ saveRDS(all_final_noNA,"all_final_noNA_incidental_6529.rds")
 ########################################
 #train test split: site
 #########################################
-# first split the site 10 times
+# first split the site 30 times
 sites <- unique(all_final_noNA$site)
 # there are 18 sites for the training sites
-train_sites <- lapply(1:10, function(i) sample(sites, size = 18, replace = FALSE))
+train_sites <- lapply(1:30, function(i) sample(sites, size = 18, replace = FALSE))
 
 # then split of the ids
-all_final_train <- lapply(1:10, function(i) all_final_noNA %>% filter(site %in% train_sites[[i]]))
-all_final_test <- lapply(1:10, function(i) all_final_noNA %>% filter(!site %in% train_sites[[i]]))
+all_final_train <- lapply(1:30, function(i) all_final_noNA %>% filter(site %in% train_sites[[i]]))
+all_final_test <- lapply(1:30, function(i) all_final_noNA %>% filter(!site %in% train_sites[[i]]))
                      
 saveRDS(all_final_train,"all_final_train.rds")
 saveRDS(all_final_test,"all_final_test.rds")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
