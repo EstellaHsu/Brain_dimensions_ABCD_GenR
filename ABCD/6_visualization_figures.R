@@ -96,7 +96,7 @@ ggsave("train_test_correlations.pdf", width = 8.5, height = 6)
 
 loadings_cv <- lapply(new_cv_reorder, function(x) {x$loadMat})
 
-# calculate the mean of across the 10 splits
+# calculate the mean of across the 30 splits
 temp <- sapply(1:6, function(i) {
   rowMeans(sapply(seq_along(loadings_cv), function(j) {abs(loadings_cv[[j]][, i])}))
 })
@@ -135,7 +135,7 @@ dev.off()
 ############## Covariance explained  ###################
 ########################################################
 # figure 2c
-# This is an example from one of the 10 train-test splits
+# This is an example from one of the 30 train-test splits
 # example for the training set
 # code for the test set is the same, just need to change the "brain_train" to "brain_test", "cbcl_train" to "cbcl_test"
 vardf <- VarianceExplain(brain_train, cbcl_train, res.abcd.example, 8) 
@@ -158,7 +158,7 @@ ggsave("covariance_explained_trainset.pdf",width=8,height=4)
 ############## permutation test visualization  #########
 ########################################################
 
-# This is an example from one of the 10 train-test splits
+# This is an example from one of the 30 train-test splits
 # example for the test set
 # figure 2d
 cor.abcd.test.example <- test_project_weights(brain_test, cbcl_test, res.abcd.example, 8)
@@ -200,17 +200,10 @@ pca_whole <- readRDS("pca.weighted.whole.rds")
 str(pca_whole)
 brain_whole <- pca_whole$brain_train_reduced[, 1:100] # the first 100 brain PCs
 
-setwd("~/Desktop/ABCD_download/data/newdata_ReleaseQC")
-all_whole <- readRDS("all_final_noNA_incidental_6529.rds")
-cbcl_whole <- all_whole[, c("cbcl_scr_syn_anxdep_r","cbcl_scr_syn_withdep_r","cbcl_scr_syn_somatic_r",
-                        "cbcl_scr_syn_social_r","cbcl_scr_syn_thought_r","cbcl_scr_syn_attention_r",
-                        "cbcl_scr_syn_rulebreak_r","cbcl_scr_syn_aggressive_r")]
-
-
 ########################################
 ######## Calculate brain scores
 ########################################
-# brain mean is the average brain loadings across 10 splits
+# brain mean is the average brain loadings across 30 splits
 brain_cvscores <- scale(brain_whole) %*% brain_mean
 
 # Then calculate the correlations between the original brain data and the brain canonical scores
@@ -218,6 +211,7 @@ brain_cvscores <- scale(brain_whole) %*% brain_mean
 # "feature_abcd" is the original vectorized brain features
 feature_abcd <- readRDS("brain_whole_residual.rds")
 feature_abcd <- as.data.frame(feature_abcd)
+
 cor_brain_cv <- lapply(1:ncol(feature_abcd), function(i) {cor(feature_abcd[, i], brain_cvscores)})
 cor_brain_cv <- do.call(rbind,cor_brain_cv)
 
@@ -246,9 +240,7 @@ parcels <- unique(labels_group)
 ####### create the heatmap
 ######################################
 # This is an example for the first canonical variate
-
 abcd_cv <- corBrCv1
-
 fig_con <- heatmap_parcels(abcd_cv)
 
 ########## build a empty connectivtiy matrix
