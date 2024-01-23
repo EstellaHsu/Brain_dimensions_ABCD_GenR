@@ -97,7 +97,7 @@ rs_train_test_abcd <- lapply(1:30, function(i) {
   # project the CCA weights in Generation R dara
   cor.abcdTogenr <- test_project_weights(brain_genr, cbcl_genr, res.abcd, 8)
   
-  perm_abcdTogenr <- permutation_test_testset(cbcl_genr,brain_genr,nperm=1999,res.abcd,abs(cor.abcdTogenr[1:3]))
+  perm_abcdTogenr <- permutation_test_testset(cbcl_genr,brain_genr,nperm=1999,res.abcd,abs(cor.abcdTogenr))
   
   return(list(abcd.train=res.abcd,abcd.train.perm=perm_abcd_train$pval.perm,
               abcd.test=abcd.test,abcd.test.perm=perm_abcd_test$pval.perm,
@@ -111,4 +111,5 @@ rs_train_test_abcd <- lapply(1:30, function(i) {
 lapply(1:30, function(x) {p.adjust(rs_train_test_abcd[[x]]$abcd.train.perm, "fdr")})
 lapply(1:30, function(x) {p.adjust(rs_train_test_abcd[[x]]$abcd.test.perm, "fdr")})
 lapply(1:30, function(x) {p.adjust(rs_train_test_abcd[[x]]$genr.perm, "fdr")})
+
 
