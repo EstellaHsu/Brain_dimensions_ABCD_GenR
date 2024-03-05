@@ -71,7 +71,7 @@ weighted_pca <- function(cbcl,brain,n) {
   rotation <- pca.weighted$rotation[,1:n]
   # the data with the reduced dimensionality
   feature_brain_reduced <- feature_brain_centered %*% rotation 
-  return(brain_train_reduced=feature_brain_reduced, rotation = pca.weighted$rotation)
+  return(list(brain_train_reduced=feature_brain_reduced, rotation = pca.weighted$rotation))
 }
 
 
@@ -176,8 +176,8 @@ grid.search.cor.Testset <- function(X,Y,X2,Y2,pen_xseq,pen_yseq,nsample) {
   best.para <- cor.res[which.max(abs(cor.res[, "Cor_mean"])), ]
   
   cor.mat <- matrix(cor.res[, "Cor_mean"], 10, 10)
-  rownames(cor.mat) <- x_pen
-  colnames(cor.mat) <- y_pen
+  rownames(cor.mat) <- pen_xseq
+  colnames(cor.mat) <- pen_yseq
   return(list(best.para, cor.mat))
 }  
 
