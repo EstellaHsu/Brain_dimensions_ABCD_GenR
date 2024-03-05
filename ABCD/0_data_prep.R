@@ -157,9 +157,6 @@ levels(all_final_noNA$parental_education) <- list("low" = 1:12,"medium" = 13:17,
 str(all_final_noNA)
 dim(all_final_noNA)
 
-saveRDS(all_final_noNA,"all_final_noNA_incidental_6529.rds")
-
-
 ########################################
 #train test split: site
 #########################################
