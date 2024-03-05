@@ -213,7 +213,7 @@ feature_abcd <- readRDS("brain_whole_residual.rds")
 feature_abcd <- as.data.frame(feature_abcd)
 
 cor_brain_cv <- lapply(1:ncol(feature_abcd), function(i) {cor(feature_abcd[, i], brain_cvscores)})
-cor_brain_cv <- do.call(rbind,cor_brain_cv)
+cor_brain_cv <- do.call(rbind,cor_brain_cv) # this is "brain_cvscores_abcd_figure3.rds"
 
 corBrCv1 <- cor_brain_cv[, 1]
 corBrCv2 <- cor_brain_cv[, 2]
