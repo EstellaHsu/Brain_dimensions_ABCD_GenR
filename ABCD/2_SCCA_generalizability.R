@@ -67,6 +67,17 @@ grid.abcd <- lapply(1:30, function(i) {
 
 saveRDS(grid.abcd,"grid.abcd.rds")
 
+###### you can check the loadings in your cases and decide whether you want to constrain the penalty parameters
+###### the CBCL loadings were constrained to be larger than 0.5 in the current study to improve the intepretability 
+grid.abcd.fmriprep.constrained <- lapply(seq_along(join.abcd), function(i) {
+  max_cor <- max(join_grid[[i]][[2]][, 5:10])
+  idx <- which(join_grid[[i]][[2]] == max_cor, arr.ind = T)
+  penalty_brain <- idx[1,1] * 0.1
+  penalty_cbcl <- idx[1,2] * 0.1
+  list(penalty_brain=penalty_brain, penalty_cbcl=penalty_cbcl)
+})
+
+
 ########################################################
 ############## 3. Fit the sCCA model  ##################
 ########################################################
@@ -80,8 +91,8 @@ rs_train_test_abcd <- lapply(1:30, function(i) {
   cbcl_train <- rs_train[[i]]$cbcl_train
   brain_test <- rs_test[[i]]$brain_test
   cbcl_test <- rs_test[[i]]$cbcl_test
-  brain_pen <- grid.abcd[[i]][[1]][[1]]
-  cbcl_pen <- grid.abcd[[i]][[1]][[2]]
+  brain_pen <- grid.abcd.fmriprep.constrained[[i]]$penalty_brain
+  cbcl_pen <- grid.abcd.fmriprep.constrained[[i]]$penalty_cbcl
   
   # fit the SCCA model in the training set
   res.abcd <- CCA(x=brain_train, z=cbcl_train, penaltyx = brain_pen, penaltyz = cbcl_pen, 
